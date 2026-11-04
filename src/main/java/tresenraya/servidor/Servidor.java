@@ -1,18 +1,23 @@
+package tresenraya.servidor;
+
 import java.io.IOException;   // error de red
 import java.net.ServerSocket; // socket del servidor: espera conexiones en un puerto
 import java.net.Socket;       // conexión con un cliente concreto
 
+import tresenraya.comun.Protocolo;
+
 /**
  * CLASE SERVIDOR
  * --------------
- * Programa principal del servidor. Se ejecuta con: java Servidor [puerto]
- * Si no se indica puerto, usa el 5050 (lo pide el enunciado).
+ * Programa principal del servidor. Se ejecuta con:
+ *     java -cp out tresenraya.servidor.Servidor [puerto]
+ * (o con servidor.bat). Si no se indica puerto, usa el 5050.
  *
  * Funcionamiento:
- * 1. Abre un ServerSocket en el puerto y se queda escuchando.
- * 2. Cada vez que un cliente se conecta, accept() devuelve un Socket.
- * 3. Crea un ManejadorJugador para ese cliente y lo lanza en un HILO NUEVO,
- *    y vuelve a esperar al siguiente cliente.
+ *  1. Abre un ServerSocket en el puerto y se queda escuchando.
+ *  2. Cada vez que un cliente se conecta, accept() devuelve un Socket.
+ *  3. Crea un ManejadorJugador para ese cliente y lo lanza en un HILO NUEVO,
+ *     y vuelve a esperar al siguiente cliente.
  *
  * El servidor NO decide si el cliente entra o no: eso lo hace la Partida
  * cuando el cliente envía PLAY (entra como X, como O o recibe FULL).
@@ -21,19 +26,10 @@ import java.net.Socket;       // conexión con un cliente concreto
  */
 public class Servidor {
 
-    // Puerto por defecto que indica el enunciado
-    public static final int PUERTO_POR_DEFECTO = 5050;
-
     public static void main(String[] args) {
+
         // ---- 1. Leer el puerto de los argumentos (si lo hay) ----
-        int puerto = PUERTO_POR_DEFECTO;
-        if (args.length > 0) {
-            try {
-                puerto = Integer.parseInt(args[0]);
-            } catch (NumberFormatException e) {
-                System.out.println("Puerto no valido, uso el " + PUERTO_POR_DEFECTO);
-            }
-        }
+        int puerto = leerPuerto(args);
 
         // ---- 2. Crear la partida ----
         // Hay UNA sola partida y se la pasamos a todos los manejadores,
@@ -57,6 +53,22 @@ public class Servidor {
         } catch (IOException e) {
             // Por ejemplo, si el puerto ya está en uso por otro programa
             System.out.println("Error en el servidor: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Devuelve el puerto pasado como primer argumento, o el 5050 si no se
+     * pasa ninguno o no es un número.
+     */
+    private static int leerPuerto(String[] args) {
+        if (args.length == 0) {
+            return Protocolo.PUERTO_POR_DEFECTO;
+        }
+        try {
+            return Integer.parseInt(args[0]);
+        } catch (NumberFormatException e) {
+            System.out.println("Puerto no valido, uso el " + Protocolo.PUERTO_POR_DEFECTO);
+            return Protocolo.PUERTO_POR_DEFECTO;
         }
     }
 }

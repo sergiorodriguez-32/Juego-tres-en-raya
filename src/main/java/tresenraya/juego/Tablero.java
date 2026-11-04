@@ -1,3 +1,5 @@
+package tresenraya.juego;
+
 // Arrays es una clase de utilidades de Java para trabajar con arrays.
 // La usamos para rellenar el tablero entero de casillas vacías de una vez.
 import java.util.Arrays;
@@ -26,9 +28,20 @@ import java.util.Arrays;
  */
 public class Tablero {
 
-    // Carácter que usamos para una casilla vacía.
-    // "public static final" = constante accesible desde otras clases (Tablero.VACIA).
+    // ---- Constantes del juego ----
+    // "public static final" = constante accesible desde otras clases (Tablero.X).
+
+    /** Marca del primer jugador. Siempre empieza X. */
+    public static final char X = 'X';
+    /** Marca del segundo jugador. */
+    public static final char O = 'O';
+    /** Carácter que usamos para una casilla vacía. */
     public static final char VACIA = '.';
+
+    /** Número de filas y de columnas. */
+    public static final int LADO = 3;
+    /** Número total de casillas (3 x 3 = 9). */
+    public static final int NUM_CASILLAS = LADO * LADO;
 
     // Las 8 combinaciones de casillas que hacen "tres en raya".
     // Cada fila de este array son las 3 posiciones (del 0 al 8) de una línea.
@@ -40,11 +53,19 @@ public class Tablero {
 
     // El tablero en sí: 9 caracteres ('.', 'X' u 'O').
     // Es "final" porque el array siempre es el mismo; solo cambia su contenido.
-    private final char[] casillas = new char[9];
+    private final char[] casillas = new char[NUM_CASILLAS];
 
     /** Constructor: crea un tablero nuevo con todas las casillas vacías. */
     public Tablero() {
         reiniciar();
+    }
+
+    /**
+     * Devuelve la marca del otro jugador: de X pasa a O y de O pasa a X.
+     * Se usa para cambiar el turno.
+     */
+    public static char contraria(char marca) {
+        return (marca == X) ? O : X;
     }
 
     /**
@@ -61,7 +82,7 @@ public class Tablero {
      * Ejemplo: (2,3) es válida; (0,1) o (4,2) no.
      */
     public boolean estaDentro(int fila, int col) {
-        return fila >= 1 && fila <= 3 && col >= 1 && col <= 3;
+        return fila >= 1 && fila <= LADO && col >= 1 && col <= LADO;
     }
 
     /** Devuelve true si nadie ha marcado todavía esa casilla. */
@@ -95,6 +116,11 @@ public class Tablero {
         return VACIA; // ninguna línea completa
     }
 
+    /** Devuelve true si alguien ya tiene tres en línea. */
+    public boolean hayGanador() {
+        return ganador() != VACIA;
+    }
+
     /**
      * Devuelve true si ya no queda ninguna casilla libre.
      * Si el tablero está lleno y nadie ha ganado, es empate.
@@ -124,6 +150,6 @@ public class Tablero {
      * Ejemplo: fila 2, col 3 -> (2-1)*3 + (3-1) = 3 + 2 = 5.
      */
     private int indice(int fila, int col) {
-        return (fila - 1) * 3 + (col - 1);
+        return (fila - 1) * LADO + (col - 1);
     }
 }
