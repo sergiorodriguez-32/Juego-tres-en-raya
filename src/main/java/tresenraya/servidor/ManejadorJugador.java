@@ -1,9 +1,15 @@
+package tresenraya.servidor;
+
 // Clases de Java para leer y escribir texto a través del socket
 import java.io.BufferedReader;    // lee texto línea a línea
 import java.io.IOException;       // error de entrada/salida (por ejemplo, se cae la conexión)
 import java.io.InputStreamReader; // convierte los bytes que llegan en caracteres
 import java.io.PrintWriter;       // escribe texto línea a línea
 import java.net.Socket;           // la conexión TCP con un cliente
+
+import static tresenraya.comun.MotivoRechazo.COMANDO_DESCONOCIDO;
+import static tresenraya.comun.MotivoRechazo.DEBES_EMPEZAR_CON_PLAY;
+import static tresenraya.comun.Protocolo.*;
 
 /**
  * CLASE MANEJADORJUGADOR
@@ -12,11 +18,13 @@ import java.net.Socket;           // la conexión TCP con un cliente
  * cliente que se conecta y lo ejecuta en su propio hilo (por eso implementa
  * Runnable). Así el servidor puede atender a varios clientes a la vez.
  *
- * Su trabajo es:
- * 1. Leer los mensajes que envía el cliente (PLAY, MOVE, REMATCH, BYE).
- * 2. Pasárselos a la Partida, que es la que decide qué hacer.
- * 3. Enviar al cliente los mensajes que le mande la Partida (con enviar()).
- * 4. Cuando el cliente se va, avisar a la Partida y cerrar la conexión.
+ * Es el "traductor" entre la red y la Partida. Su trabajo es:
+ *  1. Leer los mensajes que envía el cliente (PLAY, MOVE, REMATCH, BYE).
+ *  2. Pasárselos a la Partida, que es la que decide qué hacer.
+ *  3. Enviar al cliente los mensajes que le mande la Partida (con enviar()).
+ *  4. Cuando el cliente se va, avisar a la Partida y cerrar la conexión.
+ *
+ * Esta clase NO decide nada del juego (turnos, ganador...): eso es de Partida.
  */
 public class ManejadorJugador implements Runnable {
 
@@ -25,6 +33,9 @@ public class ManejadorJugador implements Runnable {
     private PrintWriter salida;    // para enviar mensajes a este cliente
     private String nombre;         // nombre que envía el jugador con PLAY
     private char marca;            // 'X' u 'O', la asigna la Partida
+
+    // Pasa a true cuando el jugador ha entrado en la partida con PLAY
+    private boolean dentroDeLaPartida = false;
 
     /** Constructor: recibe el socket del cliente y la partida compartida. */
     public ManejadorJugador(Socket socket, Partida partida) {
@@ -38,9 +49,6 @@ public class ManejadorJugador implements Runnable {
      */
     @Override
     public void run() {
-        // Pasa a true cuando el jugador ha entrado en la partida con PLAY
-        boolean dentroDeLaPartida = false;
-
         // try-with-resources: todo lo que se abre entre los paréntesis se
         // CIERRA AUTOMÁTICAMENTE al salir del try, tanto si termina bien como
         // si hay un error. Así nunca dejamos sockets abiertos (punto de la
@@ -67,34 +75,13 @@ public class ManejadorJugador implements Runnable {
 
                 // Separamos el comando del resto. split(" ", 2) parte solo en el
                 // primer espacio: "MOVE 2,3" -> ["MOVE", "2,3"]
-                String[] partes = linea.split(" ", 2);
+                String[] partes = linea.split(SEPARADOR, 2);
                 String comando = partes[0].toUpperCase();                // aceptamos "move" o "MOVE"
                 String argumento = (partes.length > 1) ? partes[1] : ""; // lo de después
 
-                // ---- Antes de entrar en la partida, solo se acepta PLAY <nombre> ----
-                if (!dentroDeLaPartida) {
-                    if (!comando.equals("PLAY") || argumento.isBlank()) {
-                        enviar("DENIED DEBES_EMPEZAR_CON_PLAY");
-                        continue;
-                    }
-                    nombre = argumento.trim();
-                    // La Partida decide si entra como X, como O o si está llena
-                    if (!partida.unirse(this)) {
-                        enviar("FULL");
-                        return; // salimos de run(): el try cierra la conexión
-                    }
-                    dentroDeLaPartida = true;
-                    continue;
-                }
-
-                // ---- Ya está en la partida: procesamos el comando ----
-                switch (comando) {
-                    case "MOVE" -> partida.mover(this, argumento);  // jugada
-                    case "REMATCH" -> partida.pedirRevancha(this);  // revancha
-                    case "BYE" -> {
-                        return; // desconexión voluntaria: el finally avisa a la partida
-                    }
-                    default -> enviar("DENIED COMANDO_DESCONOCIDO"); // cualquier otra cosa
+                // procesar() devuelve false cuando hay que cortar la conexión
+                if (!procesar(comando, argumento)) {
+                    return; // salimos de run(): el try cierra la conexión y el finally avisa
                 }
             }
         } catch (IOException e) {
@@ -112,6 +99,41 @@ public class ManejadorJugador implements Runnable {
     }
 
     /**
+     * Decide qué hacer con un comando recibido.
+     * Devuelve true para seguir leyendo mensajes, o false para cerrar la
+     * conexión (cuando la partida está llena o el cliente envía BYE).
+     */
+    private boolean procesar(String comando, String argumento) {
+
+        // ---- Antes de entrar en la partida, solo se acepta PLAY <nombre> ----
+        if (!dentroDeLaPartida) {
+            if (!comando.equals(PLAY) || argumento.isBlank()) {
+                enviar(mensaje(DENIED, DEBES_EMPEZAR_CON_PLAY));
+                return true;
+            }
+            nombre = argumento.trim();
+            // La Partida decide si entra como X, como O o si está llena
+            if (!partida.unirse(this)) {
+                enviar(FULL);
+                return false; // tercer jugador: cerramos su conexión
+            }
+            dentroDeLaPartida = true;
+            return true;
+        }
+
+        // ---- Ya está en la partida: cada comando se lo pasamos a la Partida ----
+        switch (comando) {
+            case MOVE -> partida.mover(this, argumento);  // jugada
+            case REMATCH -> partida.pedirRevancha(this);  // revancha
+            case BYE -> {
+                return false; // desconexión voluntaria: el finally avisa a la partida
+            }
+            default -> enviar(mensaje(DENIED, COMANDO_DESCONOCIDO)); // cualquier otra cosa
+        }
+        return true;
+    }
+
+    /**
      * Envía un mensaje a ESTE cliente.
      * Es synchronized para que, si dos hilos quieren escribirle a la vez
      * (por ejemplo, su propio hilo y el del rival a través de la Partida),
@@ -124,7 +146,7 @@ public class ManejadorJugador implements Runnable {
         }
     }
 
-    // Getters y setters que usa la clase Partida
+    // ---- Getters y setters que usa la clase Partida ----
 
     public String getNombre() {
         return nombre;
