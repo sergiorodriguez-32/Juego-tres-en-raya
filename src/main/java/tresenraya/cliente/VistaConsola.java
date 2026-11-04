@@ -8,69 +8,42 @@ import tresenraya.juego.Tablero;
 /**
  * CLASE VISTACONSOLA
  * ------------------
- * TODO lo que el cliente escribe en la pantalla está aquí: el tablero, los
- * avisos de turno, los errores, la ayuda...
+ * La "pantalla" del cliente de texto: TODO lo que se escribe en la terminal
+ * está aquí (el tablero, los avisos de turno, los errores, la ayuda...).
+ *
+ * Implementa la interfaz Vista, así EscuchaServidor puede usarla sin saber
+ * que es una consola. La versión con ventana es gui.PantallaJuego.
  *
  * ¿Por qué separarlo?
- *  - Cliente y EscuchaServidor se ocupan solo de la comunicación; no tienen
- *    ningún System.out.println mezclado con la lógica.
+ *  - Cliente, Conexion y EscuchaServidor se ocupan solo de la comunicación;
+ *    no tienen ningún System.out.println mezclado con la lógica.
  *  - Si queremos cambiar un texto o el dibujo del tablero, solo hay que
  *    mirar esta clase.
- *  - Si algún día se hace una interfaz gráfica, bastaría con sustituir esta
- *    clase por otra que pinte en una ventana.
- *
- * Todos los métodos son static porque la clase no guarda ningún dato: solo
- * escribe en la consola.
  */
-public final class VistaConsola {
+public class VistaConsola implements Vista {
 
-    private VistaConsola() {
-        // No se instancia: solo tiene métodos static
-    }
+    // =================================================================
+    // Métodos de la interfaz Vista (los llama el hilo lector)
+    // =================================================================
 
-    // ---- Conexión ----
-
-    public static String pedirNombre(Scanner teclado) {
-        System.out.print("Tu nombre: ");
-        return teclado.nextLine().trim();
-    }
-
-    public static void mostrarConectado(String host, int puerto) {
-        System.out.println("Conectado a " + host + ":" + puerto);
-    }
-
-    public static void mostrarPuertoNoValido(int puertoPorDefecto) {
-        System.out.println("Puerto no valido, uso el " + puertoPorDefecto);
-    }
-
-    public static void mostrarErrorConexion(String detalle) {
-        System.out.println("No se pudo conectar con el servidor: " + detalle);
-    }
-
-    public static void mostrarConexionCerrada() {
-        System.out.println("\nConexion cerrada por el servidor.");
-    }
-
-    public static void mostrarDespedida() {
-        System.out.println("Hasta luego.");
-    }
-
-    // ---- Mensajes del servidor ----
-
-    public static void mostrarEsperando() {
+    @Override
+    public void mostrarEsperando() {
         System.out.println("Esperando al otro jugador...");
     }
 
-    public static void mostrarPartidaLlena() {
+    @Override
+    public void mostrarPartidaLlena() {
         System.out.println("La partida esta llena. Intentalo mas tarde.");
     }
 
-    public static void mostrarInicio(char miMarca) {
+    @Override
+    public void mostrarInicio(char miMarca) {
         System.out.println("\nEmpieza la partida! Juegas con " + miMarca);
-        dibujarTablero(new Tablero().toString()); // tablero vacío: "........."
+        mostrarTablero(new Tablero().toString()); // tablero vacío: "........."
     }
 
-    public static void mostrarTurno(boolean meToca) {
+    @Override
+    public void mostrarTurno(boolean meToca) {
         if (meToca) {
             System.out.println("Te toca. Escribe fila,columna (por ejemplo 2,3):");
         } else {
@@ -83,7 +56,8 @@ public final class VistaConsola {
      * Se enseña la explicación en castellano y, entre paréntesis, el código
      * del protocolo (útil en la demo). Si el motivo no lo conocemos, solo el código.
      */
-    public static void mostrarRechazo(String codigo, MotivoRechazo motivo) {
+    @Override
+    public void mostrarRechazo(String codigo, MotivoRechazo motivo) {
         if (motivo != null) {
             System.out.println("No permitido: " + motivo.getDescripcion() + " (" + codigo + ")");
         } else {
@@ -91,25 +65,29 @@ public final class VistaConsola {
         }
     }
 
-    public static void mostrarEmpate() {
+    @Override
+    public void mostrarEmpate() {
         System.out.println("Empate!");
         mostrarOpcionesFinPartida();
     }
 
-    public static void mostrarGanador(String ganador, boolean porAbandono) {
+    @Override
+    public void mostrarGanador(String ganador, boolean porAbandono) {
         System.out.println("Gana " + ganador + (porAbandono ? " (el rival ha abandonado)" : "") + ".");
         mostrarOpcionesFinPartida();
     }
 
-    public static void mostrarDesconocido(String linea) {
+    @Override
+    public void mostrarDesconocido(String linea) {
         System.out.println("Servidor: " + linea);
     }
 
-    public static void mostrarAyuda() {
-        System.out.println("Comandos: fila,columna (del 1 al 3) para jugar | revancha | salir");
+    /** El servidor nos ha echado (por ejemplo, tras FULL): cerramos el programa. */
+    @Override
+    public void conexionCerrada() {
+        System.out.println("\nConexion cerrada por el servidor.");
+        System.exit(0);
     }
-
-    // ---- Tablero ----
 
     /**
      * Dibuja el tablero en la consola a partir del texto de 9 caracteres.
@@ -122,7 +100,8 @@ public final class VistaConsola {
      *     ---+---+---
      *   3    |   |
      */
-    public static void dibujarTablero(String t) {
+    @Override
+    public void mostrarTablero(String t) {
         System.out.println();
         System.out.println("     1   2   3"); // números de columna
         for (int fila = 0; fila < Tablero.LADO; fila++) {
@@ -142,9 +121,36 @@ public final class VistaConsola {
         System.out.println();
     }
 
-    // ---- Auxiliares ----
+    // =================================================================
+    // Métodos propios del cliente de consola (los llama Cliente)
+    // =================================================================
 
-    private static void mostrarOpcionesFinPartida() {
+    public String pedirNombre(Scanner teclado) {
+        System.out.print("Tu nombre: ");
+        return teclado.nextLine().trim();
+    }
+
+    public void mostrarConectado(String host, int puerto) {
+        System.out.println("Conectado a " + host + ":" + puerto);
+    }
+
+    public void mostrarPuertoNoValido(int puertoPorDefecto) {
+        System.out.println("Puerto no valido, uso el " + puertoPorDefecto);
+    }
+
+    public void mostrarErrorConexion(String detalle) {
+        System.out.println("No se pudo conectar con el servidor: " + detalle);
+    }
+
+    public void mostrarDespedida() {
+        System.out.println("Hasta luego.");
+    }
+
+    public void mostrarAyuda() {
+        System.out.println("Comandos: fila,columna (del 1 al 3) para jugar | revancha | salir");
+    }
+
+    private void mostrarOpcionesFinPartida() {
         System.out.println("Escribe 'revancha' para jugar otra vez o 'salir' para terminar.");
     }
 }
