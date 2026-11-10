@@ -11,6 +11,7 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import javafx.scene.text.TextAlignment;
 
 import tresenraya.cliente.Conexion;
 import tresenraya.cliente.Vista;
@@ -51,12 +52,23 @@ import tresenraya.juego.Tablero;
 public class PantallaJuego implements Vista {
 
     // Tamaño de la ventana (lo usa también PantallaConexion)
-    public static final int ANCHO = 380;
-    public static final int ALTO = 500;
+    public static final int ANCHO = 420;
+    public static final int ALTO = 600;
 
-    // Colores de cada marca, para distinguirlas de un vistazo
-    private static final String COLOR_X = "#2471a3";
-    private static final String COLOR_O = "#c0392b";
+    // Colores del tema oscuro (los de las casillas están en estilo.css)
+    private static final String COLOR_X = "#4fc3f7";
+    private static final String COLOR_O = "#ff6b81";
+    private static final String NEUTRO = "#cfd8e3";
+    private static final String VERDE = "#2ecc71";
+
+    /** Aplica a una escena el fondo oscuro y la hoja de estilos estilo.css. */
+    static void aplicarEstilo(Scene escena) {
+        escena.getRoot().getStyleClass().add("fondo");
+        var css = PantallaJuego.class.getResource("estilo.css");
+        if (css != null) { // si se compiló sin copiar recursos, se ve el estilo por defecto
+            escena.getStylesheets().add(css.toExternalForm());
+        }
+    }
 
     private final Scene escena;
     private final Label etiquetaMarca = new Label(); // se rellena con START
@@ -83,21 +95,28 @@ public class PantallaJuego implements Vista {
         this.nombre = nombre;
 
         // ---- Parte de arriba: marca y estado ----
-        etiquetaMarca.setStyle("-fx-font-size: 16px; -fx-font-weight: bold;");
-        etiquetaEstado.setStyle("-fx-font-size: 18px;");
-        VBox arriba = new VBox(5, new Label("Jugador: " + nombre), etiquetaMarca, etiquetaEstado);
+        etiquetaMarca.getStyleClass().add("marca");
+        etiquetaEstado.getStyleClass().add("estado");
+        etiquetaEstado.setWrapText(true);
+        etiquetaEstado.setTextAlignment(TextAlignment.CENTER);
+        Label titulo = new Label("Tres en raya");
+        titulo.getStyleClass().add("titulo");
+        Label jugador = new Label("Jugador: " + nombre);
+        jugador.getStyleClass().add("jugador");
+        VBox arriba = new VBox(4, titulo, jugador, etiquetaMarca, etiquetaEstado);
+        arriba.getStyleClass().add("tarjeta");
         arriba.setAlignment(Pos.CENTER);
 
         // ---- Centro: el tablero, una rejilla de 3x3 botones ----
         GridPane tablero = new GridPane();
-        tablero.setHgap(6);
-        tablero.setVgap(6);
+        tablero.setHgap(10);
+        tablero.setVgap(10);
         tablero.setAlignment(Pos.CENTER);
         for (int f = 0; f < Tablero.LADO; f++) {
             for (int c = 0; c < Tablero.LADO; c++) {
                 Button casilla = new Button();
-                casilla.setPrefSize(90, 90);
-                casilla.setStyle(estiloCasilla("#000000"));
+                casilla.setPrefSize(100, 100);
+                casilla.getStyleClass().add("casilla");
 
                 // El protocolo usa filas y columnas del 1 al 3, por eso sumamos 1.
                 // Las guardamos en variables "final" para poder usarlas en la lambda.
@@ -115,6 +134,8 @@ public class PantallaJuego implements Vista {
         etiquetaAviso.setMinHeight(40);
         etiquetaAviso.setAlignment(Pos.CENTER);
 
+        botonRevancha.getStyleClass().add("boton-primario");
+        botonSalir.getStyleClass().add("boton-peligro");
         botonRevancha.setOnAction(evento -> conexion.pedirRevancha());
         // Platform.exit() cierra la aplicación; JavaFX llamará a AplicacionGui.stop(),
         // que es quien envía BYE y cierra el socket.
@@ -130,8 +151,9 @@ public class PantallaJuego implements Vista {
         raiz.setPadding(new Insets(15));
         BorderPane.setMargin(tablero, new Insets(15, 0, 15, 0));
         escena = new Scene(raiz, ANCHO, ALTO);
+        aplicarEstilo(escena);
 
-        mostrarEstado("Conectando con el servidor...", "#333333");
+        mostrarEstado("Conectando con el servidor...", NEUTRO);
     }
 
     public Scene getEscena() {
@@ -153,9 +175,9 @@ public class PantallaJuego implements Vista {
             if (resultadoEnPantalla) {
                 // Tras una revancha o un abandono dejamos el resultado arriba
                 // y contamos abajo que estamos esperando
-                mostrarAviso("Esperando al otro jugador...", "#333333");
+                mostrarAviso("Esperando al otro jugador...", NEUTRO);
             } else {
-                mostrarEstado("Esperando al otro jugador...", "#333333");
+                mostrarEstado("Esperando al otro jugador...", NEUTRO);
                 etiquetaAviso.setText("");
             }
         });
@@ -165,7 +187,7 @@ public class PantallaJuego implements Vista {
     public void mostrarPartidaLlena() {
         Platform.runLater(() -> {
             mostrarEstado("La partida esta llena", COLOR_O);
-            mostrarAviso("Ya hay dos jugadores. Intentalo mas tarde.", "#333333");
+            mostrarAviso("Ya hay dos jugadores. Intentalo mas tarde.", NEUTRO);
         });
     }
 
@@ -192,9 +214,9 @@ public class PantallaJuego implements Vista {
     public void mostrarTurno(boolean meToca) {
         Platform.runLater(() -> {
             if (meToca) {
-                mostrarEstado("Te toca: pulsa una casilla", "#1e8449");
+                mostrarEstado("Te toca: pulsa una casilla", VERDE);
             } else {
-                mostrarEstado("Turno del rival...", "#333333");
+                mostrarEstado("Turno del rival...", NEUTRO);
             }
         });
     }
@@ -208,7 +230,7 @@ public class PantallaJuego implements Vista {
     @Override
     public void mostrarEmpate() {
         Platform.runLater(() -> {
-            mostrarEstado("Empate!", "#333333");
+            mostrarEstado("Empate!", NEUTRO);
             mostrarFinPartida();
         });
     }
@@ -217,7 +239,7 @@ public class PantallaJuego implements Vista {
     public void mostrarGanador(String ganador, boolean porAbandono) {
         Platform.runLater(() -> {
             if (ganador.equals(nombre)) {
-                mostrarEstado(porAbandono ? "Has ganado: el rival ha abandonado" : "Has ganado!", "#1e8449");
+                mostrarEstado(porAbandono ? "Has ganado: el rival ha abandonado" : "Has ganado!", VERDE);
             } else {
                 mostrarEstado("Has perdido. Gana " + ganador, COLOR_O);
             }
@@ -227,7 +249,7 @@ public class PantallaJuego implements Vista {
 
     @Override
     public void mostrarDesconocido(String linea) {
-        Platform.runLater(() -> mostrarAviso("Servidor: " + linea, "#333333"));
+        Platform.runLater(() -> mostrarAviso("Servidor: " + linea, NEUTRO));
     }
 
     /** El servidor ha cerrado la conexión: desactivamos todo menos "Salir". */
@@ -259,7 +281,12 @@ public class PantallaJuego implements Vista {
                 char marca = tablero.charAt(f * Tablero.LADO + c); // misma cuenta que en Tablero.indice()
                 Button casilla = casillas[f][c];
                 casilla.setText(marca == Tablero.VACIA ? "" : String.valueOf(marca));
-                casilla.setStyle(estiloCasilla(colorDe(marca)));
+                casilla.getStyleClass().removeAll("casilla-x", "casilla-o");
+                if (marca == Tablero.X) {
+                    casilla.getStyleClass().add("casilla-x");
+                } else if (marca == Tablero.O) {
+                    casilla.getStyleClass().add("casilla-o");
+                }
             }
         }
     }
@@ -276,7 +303,7 @@ public class PantallaJuego implements Vista {
 
     private void mostrarFinPartida() {
         resultadoEnPantalla = true;
-        mostrarAviso("Pulsa Revancha para jugar otra vez o Salir para terminar.", "#333333");
+        mostrarAviso("Pulsa Revancha para jugar otra vez o Salir para terminar.", NEUTRO);
     }
 
     private static String colorDe(char marca) {
@@ -286,11 +313,6 @@ public class PantallaJuego implements Vista {
         if (marca == Tablero.O) {
             return COLOR_O;
         }
-        return "#000000";
-    }
-
-    /** Estilo CSS de una casilla: letra grande y en negrita del color de la marca. */
-    private static String estiloCasilla(String colorTexto) {
-        return "-fx-font-size: 36px; -fx-font-weight: bold; -fx-text-fill: " + colorTexto + ";";
+        return NEUTRO;
     }
 }

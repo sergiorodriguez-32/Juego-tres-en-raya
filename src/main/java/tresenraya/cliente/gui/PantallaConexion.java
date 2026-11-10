@@ -51,13 +51,20 @@ public class PantallaConexion {
         formulario.addRow(1, new Label("IP del servidor:"), campoHost);
         formulario.addRow(2, new Label("Puerto:"), campoPuerto);
 
-        Label titulo = new Label("Tres en raya online");
-        titulo.setStyle("-fx-font-size: 22px; -fx-font-weight: bold;");
+        // El formulario va dentro de una tarjeta
+        formulario.getStyleClass().add("tarjeta");
+        campoNombre.setPrefWidth(200);
+
+        Label titulo = new Label("Tres en raya");
+        titulo.getStyleClass().add("titulo");
+        Label subtitulo = new Label("Online · 2 jugadores");
+        subtitulo.getStyleClass().add("subtitulo");
 
         Label ayuda = new Label("Si el servidor esta en este mismo PC, deja la IP como localhost.");
-        ayuda.setStyle("-fx-text-fill: #666666;");
+        ayuda.getStyleClass().add("ayuda");
         ayuda.setWrapText(true);
 
+        botonConectar.getStyleClass().add("boton-primario");
         botonConectar.setDefaultButton(true); // se pulsa también con Enter
         botonConectar.setMaxWidth(Double.MAX_VALUE);
         mensaje.setWrapText(true);
@@ -89,11 +96,14 @@ public class PantallaConexion {
         });
 
         // ---- Todo apilado en vertical ----
-        VBox raiz = new VBox(15, titulo, formulario, ayuda, botonConectar, mensaje);
-        raiz.setPadding(new Insets(25));
+        VBox cabecera = new VBox(2, titulo, subtitulo);
+        cabecera.setAlignment(Pos.CENTER);
+        VBox raiz = new VBox(18, cabecera, formulario, ayuda, botonConectar, mensaje);
+        raiz.setPadding(new Insets(30));
         raiz.setAlignment(Pos.CENTER_LEFT);
         // Mismo tamaño que PantallaJuego, para que la ventana no cambie al conectar
         escena = new Scene(raiz, PantallaJuego.ANCHO, PantallaJuego.ALTO);
+        PantallaJuego.aplicarEstilo(escena);
     }
 
     public Scene getEscena() {
@@ -103,14 +113,14 @@ public class PantallaConexion {
     /** Mientras se conecta, bloqueamos el botón para no conectar dos veces. */
     public void mostrarConectando() {
         botonConectar.setDisable(true);
-        mensaje.setStyle("-fx-text-fill: #333333;");
+        mensaje.setStyle("-fx-text-fill: #cfd8e3;");
         mensaje.setText("Conectando...");
     }
 
     /** Muestra un error en rojo y vuelve a activar el botón. */
     public void mostrarError(String texto) {
         botonConectar.setDisable(false);
-        mensaje.setStyle("-fx-text-fill: #c0392b;");
+        mensaje.setStyle("-fx-text-fill: #ff6b81;");
         mensaje.setText(texto);
     }
 }

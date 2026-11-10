@@ -111,7 +111,9 @@ public class ManejadorJugador implements Runnable {
                 enviar(mensaje(DENIED, DEBES_EMPEZAR_CON_PLAY));
                 return true;
             }
-            nombre = argumento.trim();
+            // Los espacios del nombre pasan a "_": el protocolo separa las partes
+            // con espacios, y "END WIN Ana Maria" se leería mal en el cliente.
+            nombre = argumento.trim().replaceAll("\\s+", "_");
             // La Partida decide si entra como X, como O o si está llena
             if (!partida.unirse(this)) {
                 enviar(FULL);
