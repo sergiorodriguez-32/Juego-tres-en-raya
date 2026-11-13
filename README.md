@@ -37,14 +37,23 @@ Hay dos clientes, de consola y con ventana, y los dos hablan el mismo protocolo:
 
 ## Cómo ejecutarlo
 
-### Con los scripts (Windows)
+### Con los scripts
 
-1. `compilar.bat` compila todo en la carpeta `out`.
-2. `pruebas.bat` (opcional) tiene que terminar con `Todas las pruebas OK`.
-3. `servidor.bat` arranca el servidor en el puerto 5050 (`servidor 6000` para otro puerto).
-4. Un jugador por ventana, de una de estas dos formas:
-   - `cliente.bat` abre el cliente de consola. Si el servidor está en otro PC: `cliente 192.168.1.40`.
-   - `gui.bat` abre el cliente con ventana. La IP se escribe en la propia ventana.
+Hay un script por cada paso, en dos versiones: `.bat` para Windows y `.sh` para Linux y macOS. Hacen lo mismo.
+
+| Paso | Windows | Linux / macOS |
+|---|---|---|
+| Compilar todo en `out` | `compilar.bat` | `./compilar.sh` |
+| Pruebas (opcional, deben acabar con `Todas las pruebas OK`) | `pruebas.bat` | `./pruebas.sh` |
+| Servidor en el puerto 5050 (`servidor 6000` para otro puerto) | `servidor.bat` | `./servidor.sh` |
+| Jugador en consola (con otro PC: `cliente 192.168.1.40`) | `cliente.bat` | `./cliente.sh` |
+| Jugador con ventana (la IP se escribe en la ventana) | `gui.bat` | `./gui.sh` |
+
+Un jugador por ventana o terminal. En Linux, la primera vez hay que dar permiso de ejecución a los scripts:
+
+```
+chmod +x *.sh
+```
 
 El cliente con ventana solo se compila con los scripts si el Java instalado incluye JavaFX (por ejemplo, Liberica JDK *Full*). Si no, ábrelo desde IntelliJ.
 
