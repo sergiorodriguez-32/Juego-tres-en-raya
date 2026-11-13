@@ -157,8 +157,15 @@ public class Partida {
      * Mientras tanto, el que la ha pedido recibe WAIT.
      */
     public synchronized void pedirRevancha(ManejadorJugador j) {
-        // Solo tiene sentido pedir revancha si hay dos jugadores y la partida ha terminado
-        if (enJuego || jugadorO == null) {
+        // Sin rival (se ha ido tras acabar la partida) no hay con quién jugar la
+        // revancha. Se dice aparte: la partida SÍ ha terminado, y el mensaje de
+        // "solo puedes pedir revancha cuando termina la partida" confundiría.
+        if (jugadorO == null) {
+            j.enviar(mensaje(DENIED, ESPERANDO_RIVAL));
+            return;
+        }
+        // Con la partida en marcha todavía no se puede pedir revancha
+        if (enJuego) {
             j.enviar(mensaje(DENIED, NO_HAY_PARTIDA_TERMINADA));
             return;
         }
