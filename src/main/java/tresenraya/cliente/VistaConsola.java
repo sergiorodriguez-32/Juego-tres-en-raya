@@ -72,8 +72,10 @@ public class VistaConsola implements Vista {
     }
 
     @Override
-    public void mostrarGanador(String ganador, boolean porAbandono) {
-        System.out.println("Gana " + ganador + (porAbandono ? " (el rival ha abandonado)" : "") + ".");
+    public void mostrarGanador(String ganador, boolean porAbandono, boolean yoGano) {
+        // "(has ganado tu)" / "(has perdido)" evita dudas si los dos jugadores se llaman igual
+        System.out.println("Gana " + ganador + (yoGano ? " (has ganado tu)" : " (has perdido)")
+                + (porAbandono ? " (el rival ha abandonado)" : "") + ".");
         mostrarOpcionesFinPartida();
     }
 

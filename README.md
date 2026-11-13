@@ -1,6 +1,6 @@
 # Tres en raya online (Java, TCP)
 
-Práctica de Programación multimedia y dispositivos móviles (2º DAM): un servidor y dos clientes que juegan al tres en raya por sockets TCP.
+Práctica de Programación de Servicios y Procesos (2º DAM): un servidor y dos clientes que juegan al tres en raya por sockets TCP.
 
 ## Estructura del proyecto
 

@@ -80,9 +80,6 @@ public class PantallaJuego implements Vista {
     // Las 9 casillas. casillas[0][0] es la fila 1, columna 1.
     private final Button[][] casillas = new Button[Tablero.LADO][Tablero.LADO];
 
-    // Nombre de este jugador, para saber si el ganador somos nosotros
-    private final String nombre;
-
     // Se asigna cuando ya estamos conectados (ver AplicacionGui.conectar)
     private Conexion conexion;
 
@@ -91,8 +88,12 @@ public class PantallaJuego implements Vista {
     // Solo se usa dentro de runLater, es decir, siempre desde el hilo de JavaFX.
     private boolean resultadoEnPantalla = false;
 
+    // true si el servidor nos ha rechazado con FULL. Evita que el cierre de la
+    // conexión que viene justo después tape el mensaje "La partida esta llena".
+    // Como el anterior, solo se usa desde el hilo de JavaFX.
+    private boolean partidaLlena = false;
+
     public PantallaJuego(String nombre) {
-        this.nombre = nombre;
 
         // ---- Parte de arriba: marca y estado ----
         etiquetaMarca.getStyleClass().add("marca");
@@ -186,6 +187,7 @@ public class PantallaJuego implements Vista {
     @Override
     public void mostrarPartidaLlena() {
         Platform.runLater(() -> {
+            partidaLlena = true;
             mostrarEstado("La partida esta llena", COLOR_O);
             mostrarAviso("Ya hay dos jugadores. Intentalo mas tarde.", NEUTRO);
         });
@@ -236,9 +238,11 @@ public class PantallaJuego implements Vista {
     }
 
     @Override
-    public void mostrarGanador(String ganador, boolean porAbandono) {
+    public void mostrarGanador(String ganador, boolean porAbandono, boolean yoGano) {
         Platform.runLater(() -> {
-            if (ganador.equals(nombre)) {
+            // yoGano lo calcula EscuchaServidor por el turno: así, si los dos
+            // jugadores se llaman igual, cada uno ve su resultado correcto.
+            if (yoGano) {
                 mostrarEstado(porAbandono ? "Has ganado: el rival ha abandonado" : "Has ganado!", VERDE);
             } else {
                 mostrarEstado("Has perdido. Gana " + ganador, COLOR_O);
@@ -256,7 +260,10 @@ public class PantallaJuego implements Vista {
     @Override
     public void conexionCerrada() {
         Platform.runLater(() -> {
-            mostrarEstado("Conexion cerrada por el servidor", COLOR_O);
+            // Tras FULL el servidor también cierra: no tapamos "La partida esta llena"
+            if (!partidaLlena) {
+                mostrarEstado("Conexion cerrada por el servidor", COLOR_O);
+            }
             for (Button[] filaBotones : casillas) {
                 for (Button casilla : filaBotones) {
                     casilla.setDisable(true);

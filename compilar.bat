@@ -24,6 +24,10 @@ if errorlevel 1 (
 )
 echo Servidor y cliente de consola compilados en la carpeta out
 
+rem Copia los recursos (el estilo estilo.css de la ventana) a "out". Sin esto,
+rem gui.bat no encuentra el CSS y la ventana se ve con el estilo por defecto.
+if exist src\main\resources xcopy /e /i /y /q src\main\resources out >nul
+
 javac -encoding UTF-8 -cp out -d out src\main\java\tresenraya\cliente\gui\*.java 2>nul
 if errorlevel 1 (
   echo.

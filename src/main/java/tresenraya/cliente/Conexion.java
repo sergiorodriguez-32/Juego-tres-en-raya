@@ -4,6 +4,7 @@ import java.io.BufferedReader;    // leer texto del servidor línea a línea
 import java.io.IOException;       // error de red
 import java.io.InputStreamReader; // convierte bytes en caracteres
 import java.io.PrintWriter;       // enviar texto al servidor
+import java.net.InetSocketAddress; // dirección (IP y puerto) del servidor
 import java.net.Socket;           // conexión TCP con el servidor
 
 import static tresenraya.comun.Protocolo.*;
@@ -30,6 +31,9 @@ import static tresenraya.comun.Protocolo.*;
  */
 public class Conexion implements AutoCloseable {
 
+    /** Tiempo máximo para conectar con el servidor, en milisegundos. */
+    private static final int TIEMPO_MAXIMO_MS = 5000;
+
     private final Socket socket;
     private final BufferedReader entrada;   // lo que llega del servidor
     private final PrintWriter salida;       // lo que enviamos al servidor
@@ -41,8 +45,11 @@ public class Conexion implements AutoCloseable {
      * equivocada, firewall...
      */
     public Conexion(String host, int puerto, Vista vista) throws IOException {
-        socket = new Socket(host, puerto); // aquí se hace la conexión TCP
+        socket = new Socket();
         try {
+            // Aquí se hace la conexión TCP. Con tiempo máximo: si la IP no existe,
+            // falla a los 5 segundos en vez de esperar lo que tarde el sistema.
+            socket.connect(new InetSocketAddress(host, puerto), TIEMPO_MAXIMO_MS);
             entrada = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             salida = new PrintWriter(socket.getOutputStream(), true); // true = autoflush
         } catch (IOException e) {

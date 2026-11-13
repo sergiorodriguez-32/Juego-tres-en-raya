@@ -45,8 +45,13 @@ public interface Vista {
     /** END DRAW: la partida ha terminado en empate. */
     void mostrarEmpate();
 
-    /** END WIN: la partida ha terminado y ha ganado 'ganador'. */
-    void mostrarGanador(String ganador, boolean porAbandono);
+    /**
+     * END WIN: la partida ha terminado y ha ganado 'ganador'.
+     * yoGano dice si el ganador somos nosotros. Lo calcula EscuchaServidor por
+     * el turno y no comparando nombres, porque dos jugadores podrían haber
+     * escrito el mismo nombre y los dos creerían que han ganado.
+     */
+    void mostrarGanador(String ganador, boolean porAbandono, boolean yoGano);
 
     /** Un mensaje que no sabemos interpretar. */
     void mostrarDesconocido(String linea);

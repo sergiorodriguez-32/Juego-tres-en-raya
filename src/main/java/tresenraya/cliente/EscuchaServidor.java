@@ -34,6 +34,12 @@ public class EscuchaServidor implements Runnable {
     // Solo la usa este hilo.
     private char miMarca = '?';
 
+    // Marca a la que le tocaba mover según el último TURN recibido. Tras la
+    // jugada ganadora el servidor no manda otro TURN, así que al llegar END WIN
+    // esta marca es la del jugador que acaba de ganar. Con ella sabemos si hemos
+    // ganado nosotros sin comparar nombres (dos jugadores pueden llamarse igual).
+    private char turnoActual = '?';
+
     // Se pone a true cuando el usuario pide salir. La ESCRIBE otro hilo
     // (el principal o el de la ventana) y la LEE este hilo, por eso tiene que
     // ser volatile: sin él, este hilo podría seguir viendo el valor antiguo.
@@ -95,7 +101,10 @@ public class EscuchaServidor implements Runnable {
             case OK -> vista.mostrarTablero(partes[1]);
 
             // TURN X / TURN O: de quién es el turno ahora
-            case TURN -> vista.mostrarTurno(partes[1].charAt(0) == miMarca);
+            case TURN -> {
+                turnoActual = partes[1].charAt(0);
+                vista.mostrarTurno(turnoActual == miMarca);
+            }
 
             // DENIED <motivo>: lo que hemos pedido no es válido (no es nuestro turno, casilla ocupada...)
             case DENIED -> vista.mostrarRechazo(partes[1], MotivoRechazo.desdeTexto(partes[1]));
@@ -108,7 +117,10 @@ public class EscuchaServidor implements Runnable {
                     String ganador = partes[2];
                     // Si hay una cuarta palabra "ABANDONO", el rival se ha ido
                     boolean abandono = partes.length > 3 && partes[3].equals(ABANDONO);
-                    vista.mostrarGanador(ganador, abandono);
+                    // Por abandono, END WIN solo le llega al que se queda: ha ganado él.
+                    // Si no, gana quien movió por última vez (el del último TURN).
+                    boolean yoGano = abandono || turnoActual == miMarca;
+                    vista.mostrarGanador(ganador, abandono, yoGano);
                 }
             }
 
